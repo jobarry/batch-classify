@@ -1,0 +1,57 @@
+image: eightysix/postgres-pipeline
+
+pipelines:
+  default:
+    - step:
+        name: Install and Test
+        deployment: test
+        script:
+          - pip install -r requirements.txt
+          - pytest
+          - psql -U postgres -h localhost < sql/schema.sql
+          - psql -U postgres -h localhost < sql/seed.sql
+          - python batch_classify -s bdfoods -d $(date +%Y%m%d)
+          - docker build -t eightysix/$CONTAINER_NAME:testing .
+        services:
+          - postgres
+
+  branches:
+    development:
+      - step:
+          name: Staging Test and Deploy
+          deployment: staging
+          script:
+            - pip install -r requirements.txt
+            - pytest
+            - psql -U postgres -h localhost < sql/schema.sql
+            - psql -U postgres -h localhost < sql/seed.sql
+            - python batch_classify -s bdfoods -d $(date +%Y%m%d)
+            - docker build -t eightysix/$CONTAINER_NAME:staging .
+            - docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD
+            - docker push eightysix/$CONTAINER_NAME:staging
+          services:
+            - postgres
+
+    master:
+      - step:
+          name: Production Test and Deploy
+          deployment: production
+          script:
+            - pip install -r requirements.txt
+            - pytest
+            - psql -U postgres -h localhost < sql/schema.sql
+            - psql -U postgres -h localhost < sql/seed.sql
+            - python batch_classify -s bdfoods -d $(date +%Y%m%d)
+            - docker build -t eightysix/$CONTAINER_NAME .
+            - docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD
+            - docker push eightysix/$CONTAINER_NAME
+          services:
+            - postgres
+
+definitions:
+  services:
+    postgres:
+      image: postgres
+
+options:
+  docker: true
