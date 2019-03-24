@@ -11,15 +11,15 @@ today = datetime.date.today()
 transactions['delivered'] = pd.to_datetime(transactions['delivered']).dt.date
 cust_products['last_delivered'] = pd.to_datetime(cust_products['last_delivered']).dt.date
 structured_transactions=transactions.sort_values(['customer_id','product_id','delivered'],ascending=True)
-structured_transactions=structured_transactions.merge(cust_products[['customer_id','product_id','last_delivered']], left_on=['customer_id','product_id'], right_on=['customer_id','product_id'], how='left')
+structured_transactions=structured_transactions.merge(cust_products[['customer_id','product_id','outlier']], left_on=['customer_id','product_id'], right_on=['customer_id','product_id'], how='left')
 
-#group by and shift to align delivery dates to prior delivery dates
-grouped=t.groupby(['customer_id','product_id','delivered'])['outlier','delivered','cost','price','quantity'].last()
+#group by and shift to align delivery dates to prior delivery dates and get the time gap
+grouped=structured_transactions.groupby(['customer_id','product_id','delivered'])['outlier','delivered','cost','price','quantity'].last()
 grouped['last_delivered'] = grouped.groupby([grouped.index.get_level_values('customer_id'),'product_id'])['delivered'].shift()
-
 grouped['last_delivered']=grouped['last_delivered'].fillna(grouped['delivered'])
 grouped['gap']=(grouped['delivered'] - grouped['last_delivered']).dt.days
 
+#calculate order status
 def calculate_transaction_status(gap, outlier):
     if gap==0:
         return "new"
@@ -32,7 +32,7 @@ def calculate_transaction_status(gap, outlier):
 
 grouped['status'] = np.vectorize(calculate_transaction_status)(grouped['gap'], grouped['outlier'])
 
-#need last row
+#need last row of each product group to compare against today
 def calculate_last_transaction(lr):
     if lr[0] + datetime.timedelta(lr[1]*2)<today and lr[0]!=lr[0]:
         return 'lost'
