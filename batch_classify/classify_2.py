@@ -34,12 +34,13 @@ grouped['status'] = np.vectorize(calculate_transaction_status)(grouped['gap'], g
 
 #need last row of each product group to compare against today
 def calculate_last_transaction(lr):
-    if lr[0] + datetime.timedelta(lr[1]*2)<today and lr[0]!=lr[0]:
+    print 
+    if lr[0] + datetime.timedelta(lr[2]*2)<today and lr[0]!=lr[1]:
         return 'lost'
-    elif lr[0] + datetime.timedelta(lr[1])<today and lr[0]!=lr[0]:
+    elif lr[0] + datetime.timedelta(lr[2])<today and lr[0]!=lr[1]:
         return 'opportunity'
     else:
-        return lr[2]
+        return lr[3]
 
-grouped.loc[grouped.groupby(['customer_id','product_id'])['delivered'].tail(1).index, 'status'] = grouped[['delivered','outlier','status']].apply(calculate_last_transaction, axis=1)
-grouped.to_csv('transactions_status.csv', sep=',', encoding='utf-8',index=True)
+grouped.loc[grouped.groupby(['customer_id','product_id'])['delivered'].tail(1).index, 'status'] = grouped[['delivered','last_delivered','outlier','status']].apply(calculate_last_transaction, axis=1)
+grouped[['last_delivered','cost','price','quantity','status']].to_csv('transactions_status.csv', sep=',', encoding='utf-8',index=True)
