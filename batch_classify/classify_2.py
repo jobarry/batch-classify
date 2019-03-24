@@ -3,8 +3,8 @@ import numpy as np
 import datetime
 
 #data import
-transactions = pd.read_csv("~/Desktop/eightysix/transactions.csv")
-cust_products = pd.read_csv("~/Desktop/eightysix/customer_products.csv")
+transactions = pd.read_csv("transactions.csv")
+cust_products = pd.read_csv("customer_products.csv")
 today = datetime.date.today()
 
 #convert dates and merge datasets
@@ -42,4 +42,4 @@ def calculate_last_transaction(lr):
         return lr[2]
 
 grouped.loc[grouped.groupby(['customer_id','product_id'])['delivered'].tail(1).index, 'status'] = grouped[['delivered','outlier','status']].apply(calculate_last_transaction, axis=1)
-grouped.to_csv('~/Desktop/eightysix/transactions_status.csv', sep=',', encoding='utf-8',index=True)
+grouped.to_csv('transactions_status.csv', sep=',', encoding='utf-8',index=True)
